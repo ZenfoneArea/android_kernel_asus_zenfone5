@@ -1,0 +1,4 @@
+
+obj-$(CONFIG_SENSORS_AK09911)   += akm09911.o
+
+

@@ -1,0 +1,13 @@
+TARGET_BOARD_PLATFORM := clovertrail
+KERNEL_SRC_DIR := linux/kernel
+TARGET_DEVICE ?= a500cg
+PRODUCT_OUT := out/target/product/$(TARGET_DEVICE)
+TARGET_DEVICE_DIR := device/asus/$(TARGET_DEVICE)
+TARGET_TOOLS_PREFIX := prebuilts/gcc/linux-x86/x86/x86_64-linux-android-4.7/bin/x86_64-linux-android-
+TARGET_CC := prebuilts/gcc/linux-x86/x86/x86_64-linux-android-4.7/bin/x86_64-linux-android-gcc
+PATH := $(shell pwd)/prebuilts/gcc/linux-x86/x86/x86_64-linux-android-4.7/bin:$(PATH)
+MINIGZIP := out/host/linux-x86/bin/minigzip
+
+include device/intel/common/AndroidKernel.mk
+
+openssl: out/host/linux-x86/bin/openssl

@@ -1,0 +1,7 @@
+config GPIO_CRYSTALCOVE
+	bool "Intel ValleyView Crystalcove GPIO support"
+	select IRQ_DOMAIN
+	help
+	  This driver is for Intel ValleyView.
+
+	  Say Y here to support Intel ValleyView Crystalcove GPIO.

@@ -1,0 +1,147 @@
+# A500CG/A600CG/A502CG using BCM43362 chip set
+CONFIG_BCM43362=y
+
+# bcmdhd for INTEL 4334, 4335, 43241, 43362
+ifneq ($(CONFIG_BCM4334),)
+BCM43XX_DRIVER=bcm4334
+endif
+
+ifneq ($(CONFIG_BCM4335),)
+BCM43XX_DRIVER=bcm4335
+endif
+
+ifneq ($(CONFIG_BCM43241),)
+BCM43XX_DRIVER=bcm43241
+endif
+
+ifneq ($(CONFIG_BCM4334x),)
+BCM43XX_DRIVER=bcm4334x
+endif
+
+ifneq ($(CONFIG_BCM43362),)
+BCM43XX_DRIVER=bcm43362
+endif
+
+$(info $(TARGET_PRODUCT) using driver $(BCM43XX_DRIVER).ko!!)
+
+DHDCFLAGS += -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                      \
+	-DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE             \
+	-DDHDTHREAD -DBDC                                                      \
+	-DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                 \
+	-DCUSTOMER_HW2 -DOOB_INTR_ONLY                                         \
+	-DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DBCMPLATFORM_BUS -DWLP2P      \
+	-DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT                                 \
+	-DKEEP_ALIVE -DGET_CUSTOM_MAC_ENABLE -DPKT_FILTER_SUPPORT              \
+	-DEMBEDDED_PLATFORM -DENABLE_INSMOD_NO_FW_LOAD -DPNO_SUPPORT           \
+	-DROAM_ENABLE -DDHD_USE_IDLECOUNT			              \
+	-DDHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT                            \
+	-DSUPPORT_PM2_ONLY -DMIRACAST_AMPDU_SIZE=8                             \
+	-I$(src) -I$(src)/include
+
+DHDOFILES = aiutils.o bcmsdh_sdmmc_linux.o dhd_linux.o siutils.o bcmutils.o   \
+	dhd_pno.o dhd_linux_sched.o dhd_sdio.o bcmwifi_channels.o bcmevent.o hndpmu.o   \
+	bcmsdh.o dhd_cdc.o bcmsdh_linux.o dhd_common.o dhd_wlfc.o dhd_ip.o linux_osl.o \
+	bcmsdh_sdmmc.o dhd_custom_gpio.o sbutils.o wldev_common.o wl_android.o
+
+# Broadcom add flag for android 4.4
+DHDCFLAGS += -DWL_CFG80211_P2P_DEV_IF -DWL_IFACE_COMB_NUM_CHANNELS
+
+obj-$(CONFIG_BCMDHD) += $(BCM43XX_DRIVER).o
+
+$(BCM43XX_DRIVER)-objs += $(DHDOFILES)
+ifneq ($(CONFIG_WIRELESS_EXT),)
+$(BCM43XX_DRIVER)-objs += wl_iw.o
+DHDCFLAGS += -DSOFTAP -DWL_WIRELESS_EXT -DUSE_IW
+endif
+ifneq ($(CONFIG_CFG80211),)
+$(BCM43XX_DRIVER)-objs += wl_cfg80211.o wl_cfgp2p.o wl_linux_mon.o dhd_cfg80211.o
+DHDCFLAGS += -DWL_CFG80211 -DWL_CFG80211_STA_EVENT
+#DHDCFLAGS += -DCUSTOM_ROAM_TRIGGER_SETTING=-65
+DHDCFLAGS += -DCUSTOM_ROAM_DELTA_SETTING=15
+DHDCFLAGS += -DCUSTOM_KEEP_ALIVE_SETTING=10000
+DHDCFLAGS += -DCUSTOM_PNO_EVENT_LOCK_xTIME=7
+DHDCFLAGS += -DVSDB -DWL_CFG80211_VSDB_PRIORITIZE_SCAN_REQUEST
+#DHDCFLAGS += -DPROP_TXSTATUS -DPROP_TXSTATUS_VSDB
+DHDCFLAGS += -DESCAN_RESULT_PATCH
+DHDCFLAGS += -DWL_CFG80211_GON_COLLISION
+endif
+DHDCFLAGS += -DDHD_DEBUG
+ifeq (${TARGET_BUILD_VARIANT},$(filter ${TARGET_BUILD_VARIANT}, eng))
+DHDCFLAGS += -DSDTEST
+endif
+ifneq ($(CONFIG_DHD_USE_SCHED_SCAN),)
+DHDCFLAGS += -DWL_SCHED_SCAN
+endif
+
+################################
+# INTEL platform specific features
+#################################
+CONFIG_INTEL_PLATFORM=y
+ifneq ($(CONFIG_INTEL_PLATFORM),)
+$(info bcmdhd: Compiling for Intel platforms $(obj))
+  DHDCFLAGS += -DSUPPORT_MULTIPLE_REVISION -DSUPPORT_MULTIPLE_CHIPS
+  DHDCFLAGS += -DCUSTOM_LISTEN_INTERVAL=3
+  DHDCFLAGS += -DBOARD_INTEL
+  DHDCFLAGS += -DUSE_KTHREAD_API
+  DHDCFLAGS += -DCUSTOM_RXCHAIN=1
+  DHDCFLAGS += -DDHD_USE_EARLYSUSPEND
+endif
+
+#########################
+# Chip dependent feature
+#########################
+
+ifneq ($(CONFIG_BCM4334),)
+$(info bcmdhd: Compiling for 4334 chip)
+  DHDCFLAGS += -DCUSTOM_GLOM_SETTING=5
+  DHDCFLAGS += -DCUSTOM_SDIO_F2_BLKSIZE=128
+endif
+
+ifneq ($(CONFIG_BCM4334x),)
+$(info bcmdhd: Compiling for 4334x chip)
+  DHDCFLAGS += -DCUSTOM_GLOM_SETTING=5
+  DHDCFLAGS += -DCUSTOM_SDIO_F2_BLKSIZE=128
+endif
+
+ifneq ($(CONFIG_BCM43241),)
+$(info bcmdhd: Compiling for 43241 chip)
+  DHDCFLAGS += -DCUSTOM_GLOM_SETTING=5
+  DHDCFLAGS += -DUSE_SDIOFIFO_IOVAR
+  DHDCFLAGS += -DCUSTOM_SDIO_F2_BLKSIZE=128
+endif
+
+ifneq ($(CONFIG_BCM4335),)
+$(info bcmdhd: Compiling for 4335 chip)
+  DHDCFLAGS += -DCUSTOM_GLOM_SETTING=8
+  DHDCFLAGS += -DBCMSDIOH_TXGLOM -DCUSTOM_TXGLOM=1 -DBCMSDIOH_TXGLOM_HIGHSPEED
+  DHDCFLAGS += -DDHDTCPACK_SUPPRESS
+  DHDCFLAGS += -DUSE_SDIOFIFO_IOVAR
+  DHDCFLAGS += -DCUSTOM_DPC_CPUCORE=0
+  DHDCFLAGS += -DCUSTOM_AMPDU_BA_WSIZE=40
+  DHDCFLAGS += -DRXFRAME_THREAD
+  DHDCFLAGS += -DCUSTOM_MAX_TXGLOM_SIZE=32
+  DHDCFLAGS += -DCUSTOM_DEF_TXGLOM_SIZE=14
+  DHDCFLAGS += -DUSE_DYNAMIC_MAXPKT_RXGLOM
+  DHDCFLAGS += -DCUSTOM_SDIO_F2_BLKSIZE=512
+# For BT LOCK
+ifeq ($(CONFIG_BCM4335BT),y)
+  DHDCFLAGS += -DENABLE_4335BT_WAR
+endif
+endif
+
+ifneq ($(CONFIG_BCM43362),)
+$(info bcmdhd: Compiling for 43362 chip)
+  DHDCFLAGS += -DBCMWAPI_WPI -DBCMWAPI_WAI
+  DHDCFLAGS += -DCUSTOM_GLOM_SETTING=5
+  DHDCFLAGS += -DCUSTOM_SDIO_F2_BLKSIZE=128
+  DHDCFLAGS += -DCUSTOM_ROAM_TRIGGER_SETTING=-85
+  DHDCFLAGS += -DDHCP_SCAN_SUPPRESS
+  DHDCFLAGS += -DUSE_WL_FRAMEBURST
+# throughput monitor
+  DHDCFLAGS += -DTPUT_MONITOR -DTPUT_MONITOR_USE_PM_QOS
+endif
+
+EXTRA_CFLAGS = $(DHDCFLAGS)
+ifeq ($(CONFIG_BCMDHD),m)
+EXTRA_LDFLAGS += --strip-debug
+endif
